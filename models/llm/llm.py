@@ -348,43 +348,31 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             self.previous_thinking_blocks = []
             self.previous_redacted_thinking_blocks = []
 
+        extra_model_kwargs.setdefault("tools", [])
         if tools:
-            extra_model_kwargs["tools"] = [
-                self._transform_tool_prompt(tool) for tool in tools
-            ]
-            
-            # Log the transformed tools to verify cache_control is added
-            logging.info(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
-            
-            request_payload["tools"] = extra_model_kwargs["tools"]
+            extra_model_kwargs["tools"].extend(self._transform_tool_prompt(tool) for tool in tools)
+        # Anthropic 네이티브 검색 사용
+        extra_model_kwargs["tools"].append({"type": "web_search_20250305", "name": "web_search"})
+        
+        # Log the transformed tools to verify cache_control is added
+        logging.info(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
+        
+        request_payload["tools"] = extra_model_kwargs["tools"]
 
-            # Now prune cache blocks to respect Anthropic limit
-            _prune_cache_blocks(request_payload)
+        # Now prune cache blocks to respect Anthropic limit
+        _prune_cache_blocks(request_payload)
 
-            loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
-            response = client.messages.create(
-                model=model,
-                messages=prompt_message_dicts,
-                stream=stream,
-                extra_headers=extra_headers,
-                tools=extra_model_kwargs["tools"],
-                **model_parameters,
-                **{k: v for k, v in extra_model_kwargs.items() if k != "tools"},
-            )
-        else:
-            _prune_cache_blocks(request_payload)
-
-            loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
-            response = client.messages.create(
-                model=model,
-                messages=prompt_message_dicts,
-                stream=stream,
-                extra_headers=extra_headers,
-                **model_parameters,
-                **extra_model_kwargs,
-            )
+        loggable_request = _sanitize_for_logging(request_payload)
+        logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+        response = client.messages.create(
+            model=model,
+            messages=prompt_message_dicts,
+            stream=stream,
+            extra_headers=extra_headers,
+            tools=extra_model_kwargs["tools"],
+            **model_parameters,
+            **{k: v for k, v in extra_model_kwargs.items() if k != "tools"},
+        )
 
         if stream:
             return self._handle_chat_generate_stream_response(
