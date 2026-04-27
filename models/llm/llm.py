@@ -209,7 +209,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "type": "adaptive"
             }
             extra_model_kwargs["output_config"] = {
-                "effort": "xhigh"
+                "effort": "max"
             }
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
