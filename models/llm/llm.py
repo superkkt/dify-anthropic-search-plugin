@@ -206,10 +206,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # As Opus 4.7, we must use `thinking.type.adaptive` and `output_config.effort` instead
             # of `thinking.type.enabled` and `thinking.budget_tokens`.
             extra_model_kwargs["thinking"] = {
-                "type": "adaptive",
+                "type": "adaptive"
             }
             extra_model_kwargs["output_config"] = {
-                "effort": "max",
+                "effort": "xhigh"
             }
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
